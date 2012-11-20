@@ -1,4 +1,19 @@
 <?php
+error_reporting(E_ALL ^ E_NOTICE);
+ini_set('display_errors','On');
+
+class TemplateRenderException extends Exception
+{
+  public function __construct($title, $message) {
+    $this->title = $title;
+    parent::__construct($message);
+  }
+
+  public function getTitle() {
+    return $this->title;
+  }
+
+}
 
 class RenderHelper {
   function render_error($title, $description) {
@@ -8,46 +23,76 @@ class RenderHelper {
   }
 
   function render_template($name, $locals = array()) {
-    $valid_filenames = array("$name.html.haml", "$name.haml", "$name.html.php", "$name.php");
-    foreach ($valid_filenames as $filename) {
-      $path = Wordless::join_paths(Wordless::theme_views_path(), $filename);
-      if (is_file($path)) {
-        $template_path = $path;
-        $format = array_pop(explode('.', $path));
-        break;
+    try {
+      $valid_filenames = array("$name.html.haml", "$name.haml", "$name.html.php", "$name.php");
+      foreach ($valid_filenames as $filename) {
+        $path = Wordless::join_paths(Wordless::theme_views_path(), $filename);
+        if (is_file($path)) {
+          $template_path = $path;
+          $format = array_pop(explode('.', $path));
+          break;
+        }
       }
+
+      if (!isset($template_path)) {
+        throw new TemplateRenderException(
+          "Template missing",
+          "It seems that <code>$name.html.haml</code> or <code>$name.html.php</code> doesn't exist."
+        );
+      }
+
+      extract($locals);
+
+      switch ($format) {
+        case 'haml':
+          $compiled_path = compile_haml($template_path);
+          include $compiled_path;
+          break;
+        case 'php':
+          include $template_path;
+          break;
+      }
+    } catch (TemplateRenderException $e) {
+      render_error($e->getTitle(), $e->getMessage());
+    } catch (Exception $e) {
+      render_error(get_class($e), $e->getMessage());
+    }
+  }
+
+  function compile_haml($template_path) {
+    $cache_path = template_cache_path($template_path);
+
+    if (file_exists($cache_path)) {
+      return $cache_path;
     }
 
-    if (!isset($template_path)) {
-      render_error("Template missing", "<strong>Ouch!!</strong> It seems that <code>$name.html.haml</code> or <code>$name.html.php</code> doesn't exist!");
+    $cache_dir = dirname($cache_path);
+
+    if (!file_exists($cache_dir)) {
+      mkdir($cache_dir, 0760);
+    }
+    if (!is_writable($cache_dir)) {
+      chmod($cache_dir, 0760);
     }
 
-    extract($locals);
-
-    switch ($format) {
-      case 'haml':
-        $tmp_dir = Wordless::theme_temp_path();
-
-        if (!file_exists($tmp_dir)) {
-          mkdir($tmp_dir, 0760);
-        }
-
-        if (!is_writable($tmp_dir)) {
-          chmod($tmp_dir, 0760);
-        }
-
-        if (is_writable($tmp_dir)) {
-          $haml = new HamlParser(array('style' => 'expanded', 'ugly' => false/*, 'helperFile' => dirname(__FILE__).'/../ThemeHamlHelpers.php'*/));
-          include $haml->parse($template_path, $tmp_dir);
-        } else {
-          render_error("Temp dir not writable", "<strong>Ouch!!</strong> It seems that the <code>$tmp_dir</code> directory is not writable by the server! Go fix it!");
-        }
-        break;
-      case 'php':
-        include $template_path;
-        break;
+    if (is_writable($cache_dir)) {
+      $haml = new MtHaml\Environment('php', array('enable_escaper' => false));
+      $view = $haml->compileString(file_get_contents($template_path), $template_path);
+      file_put_contents($cache_path, $view);
+      return $cache_path;
+    } else {
+      throw new TemplateRenderException(
+        "Temp dir not writable",
+        "It seems that the <code>$cache_dir</code> directory is not writable by the server! Go fix it!"
+      );
     }
+  }
 
+  function template_cache_path($template_path) {
+    $content = file_get_contents($template_path);
+    $filename = basename($template_path, '.php') . "-" . md5($content) . ".php";
+    $tmp_dir = Wordless::theme_temp_path();
+    return Wordless::join_paths($tmp_dir, $filename);
   }
 
   function get_partial_content($name, $locals = array()) {
@@ -71,11 +116,20 @@ class RenderHelper {
     render_template($current_view);
   }
 
-  function render_view($name, $layout = 'default') {
+  function render_view($name, $options = array()) {
+    $options = array_merge(
+      array(
+        'layout' => 'default',
+        'locals' => array()
+      ),
+      $options
+    );
+    $layout = $options['layout'];
+
     ob_start();
     global $current_view;
     $current_view = $name;
-    render_template("layouts/$layout");
+    render_template("layouts/$layout", $options['locals']);
     ob_flush();
   }
 }
