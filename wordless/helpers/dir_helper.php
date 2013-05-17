@@ -18,7 +18,7 @@ class DirHelper {
    * @ingroup helperfunc
    */
   function plugin_dir($path) {
-    return Wordless::join_paths(WP_CONTENT_DIR , $path);
+    return Wordless::join_paths(Wordless::plugin_path() , $path);
   }
 
 }
