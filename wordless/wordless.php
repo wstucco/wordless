@@ -316,14 +316,14 @@ class Wordless {
     }
 
     foreach($paths as &$path) {
-      $path = trim($path, '/');
+      $path = trim($path, DIRECTORY_SEPARATOR);
     }
 
-    if (substr($args[0], 0, 1) == '/') {
-      $paths[0] = '/' . $paths[0];
+    if (substr($args[0], 0, 1) == DIRECTORY_SEPARATOR) {
+      $paths[0] = DIRECTORY_SEPARATOR . $paths[0];
     }
 
-    return join('/', $paths);
+    return join(DIRECTORY_SEPARATOR, $paths);
   }
 
 }
