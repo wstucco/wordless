@@ -218,7 +218,7 @@ class AssetTagHelper {
    *
    */
   public function image_tag($source, $attributes = NULL) {
-    if (!(is_absolute_url($source) || is_relative_url($source))) {
+    if (!(is_absolute_url($source) || is_root_relative_url($source))) {
       $source = image_url($source);
     }
     

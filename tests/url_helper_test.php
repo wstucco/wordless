@@ -43,4 +43,17 @@ class UrlHelperTest extends UnitTestCase {
     $this->assertFalse(is_absolute_url('ftp://ajax/libs/jquery/1.4.2/jquery.js'));
   }
 
+  function test_is_root_relative_url() {
+    $this->assertTrue(is_root_relative_url('/img/logo.png'));
+    $this->assertFalse(is_root_relative_url('//ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.js'));
+    $this->assertFalse(is_root_relative_url('ajax/libs/jquery/1.4.2/jquery.js'));
+    $this->assertFalse(is_root_relative_url('http://ajax.googleapis.comajax/libs/jquery/1.4.2/jquery.js'));
+  }
+
+  function test_is_relative_url() {
+    $this->assertTrue(is_relative_url('img/logo.png'));
+    $this->assertFalse(is_relative_url('//ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.js'));
+    $this->assertFalse(is_relative_url('/ajax/libs/jquery/1.4.2/jquery.js'));
+    $this->assertFalse(is_relative_url('http://ajax.googleapis.comajax/libs/jquery/1.4.2/jquery.js'));
+  }
 }

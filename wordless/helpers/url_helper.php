@@ -99,12 +99,29 @@ class UrlHelper {
    */
 
   function is_absolute_url($url) {
-    return((preg_match("/^(https?:)?\/\//", $url) === 1 ? true : false));
+    return(preg_match("/^(https?:)?\/\//", $url) === 1);
+  }
+
+
+  /**
+   * Check if an URL is root relative
+   * URL are considered root relative if they are not absolute but begin with a /
+   * 
+   * @param string $url
+   *   The url to check.
+   * @return boolean
+   *   Either true if the URL is root relative or false if it is not.
+   * 
+   * @ingroup helperfunc
+   */
+
+  function is_root_relative_url($url) {
+    return(!is_absolute_url($url) && preg_match("/^\//", $url) === 1);
   }
 
   /**
    * Check if an URL is relative
-   * URL are considered relative if they begin with a /
+   * URL are considered relative if they are not absolute and don't begin with a /
    * 
    * @param string $url
    *   The url to check.
@@ -115,7 +132,7 @@ class UrlHelper {
    */
 
   function is_relative_url($url) {
-    return(!is_absolute_url($url) && preg_match("/^\//", $url) === 1);
+    return(!(is_absolute_url($url) || is_root_relative_url($url)));
   }
 
 }
