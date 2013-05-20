@@ -267,6 +267,10 @@ class Wordless {
     return self::join_paths(WP_CONTENT, 'plugins', 'wordless');
   }  
 
+  public static function theme_path() {
+    return get_template_directory();
+  }  
+
   public static function theme_helpers_path() {
     return self::join_paths(get_template_directory(), 'theme/helpers');
   }
